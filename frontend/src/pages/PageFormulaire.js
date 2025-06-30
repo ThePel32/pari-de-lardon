@@ -454,16 +454,16 @@ function PageFormulaire() {
                 gap: '10px', 
                 cursor: 'pointer',
                 padding: '15px 20px',
-                border: formData.choixPrix === 'jambon' ? '3px solid #ff6b6b' : '2px solid #ffb8a0',
+                border: formData.choixPrix === 'jambon ' ? '3px solid #ff6b6b' : '2px solid #ffb8a0',
                 borderRadius: '15px',
-                background: formData.choixPrix === 'jambon' ? '#fff5f5' : 'white',
+                background: formData.choixPrix === 'jambon ' ? '#fff5f5' : 'white',
                 transition: 'all 0.3s'
                 }}>
                 <input
                     type="radio"
                     name="choixPrix"
-                    value="jambon"
-                    checked={formData.choixPrix === 'jambon'}
+                    value="jambon "
+                    checked={formData.choixPrix === 'jambon '}
                     onChange={handleChange}
                     style={{ transform: 'scale(1.3)' }}
                 />
@@ -476,16 +476,16 @@ function PageFormulaire() {
                 gap: '10px', 
                 cursor: 'pointer',
                 padding: '15px 20px',
-                border: formData.choixPrix === 'fromage' ? '3px solid #ff6b6b' : '2px solid #ffb8a0',
+                border: formData.choixPrix === 'fromage ' ? '3px solid #ff6b6b' : '2px solid #ffb8a0',
                 borderRadius: '15px',
-                background: formData.choixPrix === 'fromage' ? '#fff5f5' : 'white',
+                background: formData.choixPrix === 'fromage ' ? '#fff5f5' : 'white',
                 transition: 'all 0.3s'
                 }}>
                 <input
                     type="radio"
                     name="choixPrix"
-                    value="fromage"
-                    checked={formData.choixPrix === 'fromage'}
+                    value="fromage "
+                    checked={formData.choixPrix === 'fromage '}
                     onChange={handleChange}
                     style={{ transform: 'scale(1.3)' }}
                 />

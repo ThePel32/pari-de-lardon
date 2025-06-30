@@ -55,7 +55,7 @@ function initializeDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom TEXT NOT NULL,
         photo TEXT,
-        preference_prix TEXT CHECK(preference_prix IN ('jambon', 'fromage')),
+        preference_prix TEXT CHECK(preference_prix IN ('jambon ', 'fromage ')),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 

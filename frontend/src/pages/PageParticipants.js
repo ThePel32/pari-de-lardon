@@ -15,7 +15,7 @@ function PageParticipants() {
         typeCheveux: 'lisse',
         date: '2025-07-15',
         heure: '14:30',
-        choixPrix: 'fromage'
+        choixPrix: 'fromage '
         },
         {
         id: 2,
@@ -29,7 +29,7 @@ function PageParticipants() {
         typeCheveux: 'ondule',
         date: '2025-07-18',
         heure: '09:15',
-        choixPrix: 'jambon'
+        choixPrix: 'jambon '
         },
         {
         id: 3,
@@ -43,7 +43,7 @@ function PageParticipants() {
         typeCheveux: 'boucle',
         date: '2025-07-20',
         heure: '16:45',
-        choixPrix: 'fromage'
+        choixPrix: 'fromage '
         }
     ]);
 
@@ -64,7 +64,7 @@ function PageParticipants() {
     };
 
     const getPrixEmoji = (choix) => {
-        return choix === 'jambon' ? '🥓' : '🧀';
+        return choix === 'jambon ' ? '🥓' : '🧀';
     };
 
     return (
@@ -322,7 +322,7 @@ function PageParticipants() {
                     🏆 Prix souhaité
                     </h4>
                     <div style={{ fontSize: '18px' }}>
-                    {getPrixEmoji(selectedParticipant.choixPrix)} {selectedParticipant.choixPrix === 'jambon' ? 'Jambon' : 'Fromage'} du poids de Pipas
+                    {getPrixEmoji(selectedParticipant.choixPrix)} {selectedParticipant.choixPrix === 'jambon ' ? 'Jambon ' : 'Fromage '} du poids de Pipas
                     </div>
                 </div>
 

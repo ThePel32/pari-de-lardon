@@ -31,7 +31,7 @@ function PageAdmin() {
         typeCheveux: 'lisse',
         date: '2025-07-15',
         heure: '14:30',
-        choixPrix: 'fromage'
+        choixPrix: 'fromage '
         },
         {
         id: 2,
@@ -44,7 +44,7 @@ function PageAdmin() {
         typeCheveux: 'ondule',
         date: '2025-07-18',
         heure: '09:15',
-        choixPrix: 'jambon'
+        choixPrix: 'jambon '
         },
         {
         id: 3,
@@ -57,7 +57,7 @@ function PageAdmin() {
         typeCheveux: 'boucle',
         date: '2025-07-20',
         heure: '16:45',
-        choixPrix: 'fromage'
+        choixPrix: 'fromage '
         }
     ];
 
@@ -485,7 +485,7 @@ function PageAdmin() {
                             fontSize: '14px',
                             color: index === 0 ? '#666' : 'var(--gris-moyen)'
                         }}>
-                            {participant.choixPrix === 'jambon' ? '🥓' : '🧀'} {participant.choixPrix}
+                            {participant.choixPrix === 'jambon ' ? '🥓' : '🧀'} {participant.choixPrix}
                         </div>
                         </div>
                     </div>
