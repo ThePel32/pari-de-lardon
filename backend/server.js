@@ -284,7 +284,7 @@ function calculerScore(pronostics, reelles) {
     let score = 0;
 
     if (pronostics.sexe === reelles.sexe) score += 10;
-    if (pronostics.prenom && pronostics.prenom.toLowerCase() === reelles.prenom.toLowerCase()) score += 15;
+    if (pronostics.prenom && pronostics.prenom.toLowerCase() === reelles.prenom.toLowerCase()) score += 5;
     if (pronostics.couleur_cheveux === reelles.couleur_cheveux) score += 8;
     if (pronostics.type_cheveux === reelles.type_cheveux) score += 8;
 
