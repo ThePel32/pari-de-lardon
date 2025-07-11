@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function PageAdmin() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -13,57 +13,34 @@ function PageAdmin() {
         couleurCheveux: '',
         typeCheveux: '',
         dateNaissance: '',
-        heureNaissance: '',
-        poidsExact: ''
+        heureNaissance: ''
     });
 
+    const [participants, setParticipants] = useState([]);
     const [resultsSaved, setResultsSaved] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const participants = [
-        {
-            id: 1,
-            nom: 'Marie',
-            sexe: 'fille',
-            prenom: 'Emma',
-            poids: 3.2,
-            taille: 48,
-            couleurCheveux: 'blond',
-            typeCheveux: 'lisse',
-            date: '2025-07-15',
-            heure: '14:30',
-            choixPrix: 'fromage'
-        },
-        {
-            id: 2,
-            nom: 'Thomas',
-            sexe: 'garcon',
-            prenom: 'Lucas',
-            poids: 3.8,
-            taille: 52,
-            couleurCheveux: 'brun',
-            typeCheveux: 'ondule',
-            date: '2025-07-18',
-            heure: '09:15',
-            choixPrix: 'jambon'
-        },
-        {
-            id: 3,
-            nom: 'Sophie',
-            sexe: 'fille',
-            prenom: 'Léa',
-            poids: 3.5,
-            taille: 50,
-            couleurCheveux: 'chatain',
-            typeCheveux: 'boucle',
-            date: '2025-07-20',
-            heure: '16:45',
-            choixPrix: 'fromage'
+    const loadParticipants = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/api/participants/classement');
+            if (response.ok) {
+                const data = await response.json();
+                setParticipants(data);
+            }
+        } catch (error) {
+            console.error('Erreur chargement participants:', error);
         }
-    ];
+    };
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            loadParticipants();
+        }
+    }, [isAuthenticated]);
 
     const handleLogin = (e) => {
         e.preventDefault();
-        // TODO: Vraie authentification avec le backend
         if (password === 'pipas2025') {
             setIsAuthenticated(true);
             setLoginError('');
@@ -78,67 +55,78 @@ function PageAdmin() {
             ...prev,
             [name]: value
         }));
+        setError('');
     };
 
-    const handleSaveResults = (e) => {
+    const handleSaveResults = async (e) => {
         e.preventDefault();
-        // TODO: Sauvegarder en base
-        console.log('Résultats sauvegardés:', resultsData);
-        setResultsSaved(true);
-        setTimeout(() => setResultsSaved(false), 3000);
+        setLoading(true);
+        setError('');
+
+        try {
+            const apiData = {
+                sexe: resultsData.sexe,
+                prenom: resultsData.prenom,
+                poids: parseFloat(resultsData.poids),
+                taille: parseFloat(resultsData.taille),
+                couleur_cheveux: resultsData.couleurCheveux,
+                type_cheveux: resultsData.typeCheveux,
+                date_naissance: resultsData.dateNaissance,
+                heure_naissance: resultsData.heureNaissance
+            };
+
+            const response = await fetch('http://localhost:3001/api/resultats-reels', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(apiData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                setResultsSaved(true);
+                await loadParticipants();
+                setTimeout(() => setResultsSaved(false), 3000);
+            } else {
+                throw new Error(result.error || 'Erreur lors de la sauvegarde');
+            }
+
+        } catch (error) {
+            console.error('Erreur sauvegarde:', error);
+            setError(error.message || 'Erreur lors de la sauvegarde des résultats');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const calculateScores = () => {
-        if (!resultsData.sexe || !resultsData.poids) {
-            return [];
+    const handleRecalculateScores = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch('http://localhost:3001/api/resultats-reels/recalculer', {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                await loadParticipants();
+            } else {
+                throw new Error('Erreur lors du recalcul');
+            }
+        } catch (error) {
+            console.error('Erreur recalcul:', error);
+            setError('Erreur lors du recalcul des scores');
+        } finally {
+            setLoading(false);
         }
+    };
 
-        return participants.map(participant => {
-            let score = 0;
-            let details = [];
+    const getSexeEmoji = (sexe) => {
+        return sexe === 'garcon' ? '👦' : '👧';
+    };
 
-            if (participant.sexe === resultsData.sexe) {
-                score += 20;
-                details.push('Sexe: +20');
-            }
-
-            const diffPoids = Math.abs(parseFloat(participant.poids) - parseFloat(resultsData.poids));
-            const pointsPoids = Math.max(0, 20 - diffPoids * 10);
-            score += pointsPoids;
-            details.push(`Poids: +${pointsPoids.toFixed(1)}`);
-
-            if (resultsData.taille) {
-                const diffTaille = Math.abs(parseInt(participant.taille) - parseInt(resultsData.taille));
-                const pointsTaille = Math.max(0, 15 - diffTaille * 2);
-                score += pointsTaille;
-                details.push(`Taille: +${pointsTaille.toFixed(1)}`);
-            }
-
-            if (participant.couleurCheveux === resultsData.couleurCheveux) {
-                score += 10;
-                details.push('Couleur cheveux: +10');
-            }
-
-            if (participant.typeCheveux === resultsData.typeCheveux) {
-                score += 5;
-                details.push('Type cheveux: +5');
-            }
-
-            if (resultsData.dateNaissance && participant.date) {
-                const diffJours = Math.abs(
-                    (new Date(participant.date) - new Date(resultsData.dateNaissance)) / (1000 * 60 * 60 * 24)
-                );
-                const pointsDate = Math.max(0, 10 - diffJours);
-                score += pointsDate;
-                details.push(`Date: +${pointsDate.toFixed(1)}`);
-            }
-
-            return {
-                ...participant,
-                score: Math.round(score * 10) / 10,
-                details
-            };
-        }).sort((a, b) => b.score - a.score);
+    const getPrixEmoji = (choix) => {
+        return choix === 'jambon' ? '🥓' : '🧀';
     };
 
     if (!isAuthenticated) {
@@ -200,6 +188,14 @@ function PageAdmin() {
                 </button>
             </div>
 
+            {error && (
+                <div className="card" style={{ backgroundColor: '#fdeaea', border: '1px solid #f44336', marginBottom: '20px' }}>
+                    <p style={{ color: '#d32f2f', margin: '10px 0' }}>
+                        {error}
+                    </p>
+                </div>
+            )}
+
             <div className="card mb-40">
                 <h3 className="form-section-title">
                     👶 Saisir les résultats réels
@@ -209,13 +205,15 @@ function PageAdmin() {
                     <div className="admin-form-grid">
                         <div className="form-group">
                             <label className="form-label">
-                                Sexe réel
+                                Sexe réel *
                             </label>
                             <select
                                 name="sexe"
                                 value={resultsData.sexe}
                                 onChange={handleResultChange}
                                 className="form-select"
+                                disabled={loading}
+                                required
                             >
                                 <option value="">Choisir...</option>
                                 <option value="garcon">👦 Garçon</option>
@@ -225,7 +223,7 @@ function PageAdmin() {
 
                         <div className="form-group">
                             <label className="form-label">
-                                Prénom réel
+                                Prénom réel *
                             </label>
                             <input
                                 type="text"
@@ -234,47 +232,56 @@ function PageAdmin() {
                                 onChange={handleResultChange}
                                 placeholder="Prénom de Pipas"
                                 className="form-input"
+                                disabled={loading}
+                                required
                             />
                         </div>
 
                         <div className="form-group">
                             <label className="form-label">
-                                Poids (kg)
+                                Poids (kg) *
                             </label>
                             <input
                                 type="number"
                                 name="poids"
                                 value={resultsData.poids}
                                 onChange={handleResultChange}
-                                placeholder="3.2"
-                                step="0.1"
+                                placeholder="3.46"
+                                step="0.01"
                                 className="form-input"
+                                disabled={loading}
+                                required
                             />
                         </div>
 
                         <div className="form-group">
                             <label className="form-label">
-                                Taille (cm)
+                                Taille (cm) *
                             </label>
                             <input
                                 type="number"
                                 name="taille"
                                 value={resultsData.taille}
                                 onChange={handleResultChange}
-                                placeholder="50"
+                                placeholder="48.5"
+                                step="0.1"
                                 className="form-input"
+                                disabled={loading}
+                                required
                             />
                         </div>
 
                         <div className="form-group">
                             <label className="form-label">
-                                Couleur cheveux
+                                Couleur cheveux *
                             </label>
                             <select
                                 name="couleurCheveux"
                                 value={resultsData.couleurCheveux}
                                 onChange={handleResultChange}
                                 className="form-select"
+                                disabled={loading}
+                                required
                             >
                                 <option value="">Choisir...</option>
                                 <option value="brun">Brun</option>
@@ -287,13 +294,15 @@ function PageAdmin() {
 
                         <div className="form-group">
                             <label className="form-label">
-                                Type cheveux
+                                Type cheveux *
                             </label>
                             <select
                                 name="typeCheveux"
                                 value={resultsData.typeCheveux}
                                 onChange={handleResultChange}
                                 className="form-select"
+                                disabled={loading}
+                                required
                             >
                                 <option value="">Choisir...</option>
                                 <option value="lisse">Lisse</option>
@@ -305,7 +314,7 @@ function PageAdmin() {
 
                         <div className="form-group">
                             <label className="form-label">
-                                Date de naissance
+                                Date de naissance *
                             </label>
                             <input
                                 type="date"
@@ -313,12 +322,14 @@ function PageAdmin() {
                                 value={resultsData.dateNaissance}
                                 onChange={handleResultChange}
                                 className="form-input"
+                                disabled={loading}
+                                required
                             />
                         </div>
 
                         <div className="form-group">
                             <label className="form-label">
-                                Heure de naissance
+                                Heure de naissance *
                             </label>
                             <input
                                 type="time"
@@ -326,6 +337,8 @@ function PageAdmin() {
                                 value={resultsData.heureNaissance}
                                 onChange={handleResultChange}
                                 className="form-input"
+                                disabled={loading}
+                                required
                             />
                         </div>
                     </div>
@@ -335,26 +348,38 @@ function PageAdmin() {
                             type="submit"
                             className="btn-primary"
                             style={{ padding: '12px 30px' }}
+                            disabled={loading}
                         >
-                            💾 Sauvegarder les résultats
+                            {loading ? 'Sauvegarde...' : '💾 Sauvegarder les résultats'}
                         </button>
+                        
+                        <button
+                            type="button"
+                            onClick={handleRecalculateScores}
+                            className="btn-secondary"
+                            style={{ padding: '12px 20px', marginLeft: '10px' }}
+                            disabled={loading}
+                        >
+                            🔄 Recalculer les scores
+                        </button>
+
                         {resultsSaved && (
                             <p className="success-message">
-                                ✅ Résultats sauvegardés !
+                                Résultats sauvegardés et scores calculés !
                             </p>
                         )}
                     </div>
                 </form>
             </div>
 
-            {resultsData.sexe && resultsData.poids && (
+            {participants.length > 0 && (
                 <div className="card">
                     <h3 className="form-section-title">
-                        🏆 Classement des participants
+                        🏆 Classement mis à jour ({participants.length} participants)
                     </h3>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        {calculateScores().map((participant, index) => (
+                        {participants.map((participant, index) => (
                             <div
                                 key={participant.id}
                                 className={`leaderboard-item ${index === 0 ? 'leaderboard-item-first' :
@@ -372,33 +397,27 @@ function PageAdmin() {
                                             <h4 className="leaderboard-name">
                                                 {participant.nom}
                                             </h4>
+                                            <div className="leaderboard-details">
+                                                {getSexeEmoji(participant.pronostics?.sexe)} {participant.pronostics?.prenom || 'Non défini'}
+                                            </div>
                                             <div className="leaderboard-prix">
-                                                {participant.choixPrix === 'jambon' ? '🥓' : '🧀'} {participant.choixPrix}
+                                                {getPrixEmoji(participant.preference_prix)} {participant.preference_prix}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="leaderboard-score">
-                                        {participant.score} pts
+                                        {participant.score || 0} pts
                                     </div>
-                                </div>
-
-                                <div className="score-details">
-                                    {participant.details.map((detail, i) => (
-                                        <span key={i} className="score-detail">
-                                            {detail}
-                                        </span>
-                                    ))}
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {calculateScores().length > 0 && (
+                    {participants.length > 0 && participants[0]?.score > 0 && (
                         <div className="winner-announcement">
-                            <h4 style={{ marginBottom: '10px' }}>🎉 Gagnant</h4>
+                            <h4 style={{ marginBottom: '10px' }}>🎉 Gagnant actuel</h4>
                             <p style={{ fontSize: '18px', fontWeight: '500' }}>
-                                <strong>{calculateScores()[0]?.nom}</strong> remporte un {calculateScores()[0]?.choixPrix}
-                                de {resultsData.poids} kg !
+                                <strong>{participants[0]?.nom}</strong> avec {participants[0]?.score} points remporte un {getPrixEmoji(participants[0]?.preference_prix)} {participants[0]?.preference_prix} !
                             </p>
                         </div>
                     )}

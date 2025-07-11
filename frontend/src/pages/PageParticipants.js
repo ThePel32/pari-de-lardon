@@ -1,62 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function PageParticipants() {
-    // TODO: Remplacer par des données du backend
-    const [participants] = useState([
-        {
-            id: 1,
-            nom: 'Marie',
-            photo: null,
-            sexe: 'fille',
-            prenom: 'Emma',
-            poids: 3.2,
-            taille: 48,
-            couleurCheveux: 'blond',
-            typeCheveux: 'lisse',
-            date: '2025-07-15',
-            heure: '14:30',
-            choixPrix: 'fromage'
-        },
-        {
-            id: 2,
-            nom: 'Thomas',
-            photo: null,
-            sexe: 'garcon',
-            prenom: 'Lucas',
-            poids: 3.8,
-            taille: 52,
-            couleurCheveux: 'brun',
-            typeCheveux: 'ondule',
-            date: '2025-07-18',
-            heure: '09:15',
-            choixPrix: 'jambon'
-        },
-        {
-            id: 3,
-            nom: 'Sophie',
-            photo: null,
-            sexe: 'fille',
-            prenom: 'Léa',
-            poids: 3.5,
-            taille: 50,
-            couleurCheveux: 'chatain',
-            typeCheveux: 'boucle',
-            date: '2025-07-20',
-            heure: '16:45',
-            choixPrix: 'fromage'
-        }
-    ]);
-
+    const navigate = useNavigate();
+    const [participants, setParticipants] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [selectedParticipant, setSelectedParticipant] = useState(null);
 
+    useEffect(() => {
+        fetch('http://localhost:3001/api/participants')
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('Erreur réseau');
+                }
+                return res.json();
+            })
+            .then(data => {
+                setParticipants(data);
+                setLoading(false);
+            })
+            .catch(error => {
+                console.error('Erreur fetch:', error);
+                setError(error.message);
+                setLoading(false);
+            });
+    }, []);
+
     const formatDate = (dateString) => {
+        if (!dateString) return 'Non défini';
         const date = new Date(dateString);
-        return date.toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        return date.toLocaleDateString('fr-FR');
     };
 
     const getSexeEmoji = (sexe) => {
@@ -66,6 +40,36 @@ function PageParticipants() {
     const getPrixEmoji = (choix) => {
         return choix === 'jambon' ? '🥓' : '🧀';
     };
+
+    const formatPoids = (poids) => {
+        return poids ? parseFloat(poids).toFixed(2) : '0.00';
+    };
+
+    const formatTaille = (taille) => {
+        return taille ? parseFloat(taille).toFixed(1) : '0.0';
+    };
+
+    if (loading) {
+        return (
+            <div className="loading-container text-center">
+                <h2>Chargement des participants...</h2>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="error-container text-center">
+                <h2>Erreur: {error}</h2>
+                <button 
+                    onClick={() => window.location.reload()} 
+                    className="btn-primary"
+                >
+                    🔄 Réessayer
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -82,7 +86,18 @@ function PageParticipants() {
                     >
                         <div className="participant-header">
                             <div className="participant-avatar">
-                                {participant.photo ? '📸' : '👤'}
+                                {participant.photo ? (
+                                    <img 
+                                        src={`http://localhost:3001${participant.photo}`}
+                                        alt={participant.nom}
+                                        style={{
+                                            width: '50px', 
+                                            height: '50px', 
+                                            borderRadius: '50%', 
+                                            objectFit: 'cover'
+                                        }}
+                                    />
+                                ) : '👤'}
                             </div>
                             <div>
                                 <h3 className="participant-name">
@@ -96,24 +111,27 @@ function PageParticipants() {
 
                         <div className="participant-predictions">
                             <div className="participant-predictions-header">
-                                <span>{getSexeEmoji(participant.sexe)}</span>
-                                <span>{participant.prenom}</span>
+                                <span>{getSexeEmoji(participant.pronostics.sexe)}</span>
+                                <span>{participant.pronostics.prenom || 'Non défini'}</span>
                             </div>
                             <div className="participant-predictions-details">
-                                <span>⚖️ {participant.poids} kg</span>
-                                <span>📏 {participant.taille} cm</span>
+                                <span>⚖️ {formatPoids(participant.pronostics.poids)} kg</span>
+                                <span>📏 {formatTaille(participant.pronostics.taille)} cm</span>
                             </div>
                         </div>
 
                         <div className="participant-footer">
                             <div className="participant-date">
-                                📅 {formatDate(participant.date)}
+                                📅 {formatDate(participant.pronostics?.date_naissance)}
                             </div>
                             <div className="participant-prix">
-                                {getPrixEmoji(participant.choixPrix)}
+                                {getPrixEmoji(participant.preference_prix)}
                                 <span style={{ textTransform: 'capitalize' }}>
-                                    {participant.choixPrix}
+                                    {participant.preference_prix}
                                 </span>
+                            </div>
+                            <div className="participant-score">
+                                🏆 Score: {participant.score || 0}
                             </div>
                         </div>
                     </div>
@@ -129,7 +147,10 @@ function PageParticipants() {
                     <p className="participants-empty-text">
                         Soyez le premier à faire vos pronostics !
                     </p>
-                    <button className="btn-primary">
+                    <button 
+                        className="btn-primary"
+                        onClick={() => navigate('/participer')}
+                    >
                         📝 Faire mes pronostics
                     </button>
                 </div>
@@ -157,27 +178,27 @@ function PageParticipants() {
                                 <div className="modal-details-grid">
                                     <div className="modal-detail-item">
                                         <strong>Sexe:</strong>
-                                        {getSexeEmoji(selectedParticipant.sexe)} {selectedParticipant.sexe === 'garcon' ? 'Garçon' : 'Fille'}
+                                        {getSexeEmoji(selectedParticipant.pronostics?.sexe)} {selectedParticipant.pronostics?.sexe === 'garcon' ? 'Garçon' : 'Fille'}
                                     </div>
                                     <div className="modal-detail-item">
                                         <strong>Prénom:</strong>
-                                        {selectedParticipant.prenom}
+                                        {selectedParticipant.pronostics?.prenom || 'Non défini'}
                                     </div>
                                     <div className="modal-detail-item">
                                         <strong>Poids:</strong>
-                                        ⚖️ {selectedParticipant.poids} kg
+                                        ⚖️ {formatPoids(selectedParticipant.pronostics?.poids)} kg
                                     </div>
                                     <div className="modal-detail-item">
                                         <strong>Taille:</strong>
-                                        📏 {selectedParticipant.taille} cm
+                                        📏 {formatTaille(selectedParticipant.pronostics?.taille)} cm
                                     </div>
                                     <div className="modal-detail-item">
                                         <strong>Cheveux:</strong>
-                                        {selectedParticipant.couleurCheveux} {selectedParticipant.typeCheveux}
+                                        {selectedParticipant.pronostics?.couleur_cheveux} {selectedParticipant.pronostics?.type_cheveux}
                                     </div>
                                     <div className="modal-detail-item">
                                         <strong>Heure:</strong>
-                                        🕐 {selectedParticipant.heure}
+                                        🕐 {selectedParticipant.pronostics?.heure_naissance || 'Non définie'}
                                     </div>
                                 </div>
                             </div>
@@ -187,7 +208,7 @@ function PageParticipants() {
                                     🏆 Prix souhaité
                                 </h4>
                                 <div style={{ fontSize: '18px' }}>
-                                    {getPrixEmoji(selectedParticipant.choixPrix)} {selectedParticipant.choixPrix === 'jambon' ? 'Jambon' : 'Fromage'} du poids de Pipas
+                                    {getPrixEmoji(selectedParticipant.preference_prix)} {selectedParticipant.preference_prix === 'jambon' ? 'Jambon' : 'Fromage'} du poids de Pipas
                                 </div>
                             </div>
 
@@ -196,7 +217,16 @@ function PageParticipants() {
                                     📅 Date prévue
                                 </h4>
                                 <div style={{ fontSize: '18px' }}>
-                                    {formatDate(selectedParticipant.date)}
+                                    {formatDate(selectedParticipant.pronostics?.date_naissance)}
+                                </div>
+                            </div>
+
+                            <div className="modal-section modal-section-score">
+                                <h4 className="modal-section-title">
+                                    🏆 Score actuel
+                                </h4>
+                                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2196F3' }}>
+                                    {selectedParticipant.score || 0} points
                                 </div>
                             </div>
                         </div>

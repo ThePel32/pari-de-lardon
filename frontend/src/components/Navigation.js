@@ -1,32 +1,35 @@
-function Navigation({ currentPage, setCurrentPage }) {
+import { NavLink } from 'react-router-dom';
+
+function Navigation() {
     return (
         <nav className="navigation">
             <div className="container">
                 <div className="nav-buttons">
-                    <button 
-                        className={currentPage === 'accueil' ? 'btn-nav-active' : 'btn-nav-inactive'}
-                        onClick={() => setCurrentPage('accueil')}
+                    <NavLink 
+                        to="/"
+                        className={({ isActive }) => isActive ? 'btn-nav-active' : 'btn-nav-inactive'}
+                        end
                     >
                         🏠 Accueil
-                    </button>
-                    <button 
-                        className={currentPage === 'formulaire' ? 'btn-nav-active' : 'btn-nav-inactive'}
-                        onClick={() => setCurrentPage('formulaire')}
+                    </NavLink>
+                    <NavLink 
+                        to="/participer"
+                        className={({ isActive }) => isActive ? 'btn-nav-active' : 'btn-nav-inactive'}
                     >
                         📝 Participer
-                    </button>
-                    <button 
-                        className={currentPage === 'participants' ? 'btn-nav-active' : 'btn-nav-inactive'}
-                        onClick={() => setCurrentPage('participants')}
+                    </NavLink>
+                    <NavLink 
+                        to="/participants"
+                        className={({ isActive }) => isActive ? 'btn-nav-active' : 'btn-nav-inactive'}
                     >
                         👥 Participants
-                    </button>
-                    <button 
-                        className={currentPage === 'admin' ? 'btn-nav-active' : 'btn-nav-inactive'}
-                        onClick={() => setCurrentPage('admin')}
+                    </NavLink>
+                    <NavLink 
+                        to="/admin"
+                        className={({ isActive }) => isActive ? 'btn-nav-active' : 'btn-nav-inactive'}
                     >
                         🔐 Admin
-                    </button>
+                    </NavLink>
                 </div>
             </div>
         </nav>

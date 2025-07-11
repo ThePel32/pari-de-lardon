@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
 
 import Header from './components/Header';
@@ -10,25 +11,20 @@ import PageParticipants from './pages/PageParticipants';
 import PageAdmin from './pages/PageAdmin';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('accueil');
-
   return (
     <div className="App">
-      <Header />
-
-      <Navigation 
-        currentPage={currentPage} 
-        setCurrentPage={setCurrentPage} 
-      />
-
-      <main className="container" style={{ paddingBottom: '40px' }}>
-        {currentPage === 'accueil' && (
-          <PageAccueil setCurrentPage={setCurrentPage} />
-        )}
-        {currentPage === 'formulaire' && <PageFormulaire />}
-        {currentPage === 'participants' && <PageParticipants />}
-        {currentPage === 'admin' && <PageAdmin />}
-      </main>
+      <BrowserRouter>
+        <Header />
+        <Navigation />
+        <main className="container" style={{ paddingBottom: '40px' }}>
+          <Routes>
+            <Route path="/" element={<PageAccueil />} />
+            <Route path="/participer" element={<PageFormulaire />} />
+            <Route path="/participants" element={<PageParticipants />} />
+            <Route path="/admin" element={<PageAdmin />} />
+          </Routes>
+        </main>
+      </BrowserRouter>
     </div>
   );
 }

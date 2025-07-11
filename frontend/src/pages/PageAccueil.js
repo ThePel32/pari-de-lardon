@@ -1,4 +1,8 @@
-function PageAccueil({ setCurrentPage }) {
+import { useNavigate } from 'react-router-dom';
+
+function PageAccueil() {
+    const navigate = useNavigate();
+
     return (
         <div className="accueil-container text-center">
             <div className="card">
@@ -27,13 +31,13 @@ function PageAccueil({ setCurrentPage }) {
                 <div className="accueil-buttons">
                     <button 
                         className="btn-accueil-primary"
-                        onClick={() => setCurrentPage('formulaire')}
+                        onClick={() => navigate('/participer')}
                     >
                         🎯 Faire mes pronostics
                     </button>
                     <button 
                         className="btn-secondary"
-                        onClick={() => setCurrentPage('participants')}
+                        onClick={() => navigate('/participants')}
                     >
                         👥 Voir les participants
                     </button>

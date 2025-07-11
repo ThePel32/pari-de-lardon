@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function PageFormulaire() {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         nom: '',
         photo: null,
-
         sexe: '',
         prenom: '',
         poids: '',
@@ -13,11 +14,12 @@ function PageFormulaire() {
         typeCheveux: '',
         date: '',
         heure: '',
-
         choixPrix: ''
     });
 
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitSuccess, setSubmitSuccess] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -62,15 +64,88 @@ function PageFormulaire() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (validateForm()) {
-            console.log('Formulaire valide:', formData);
-            alert('Pronostics enregistrés ! 🎉\n(Pour le moment juste dans la console)');
-            // TODO: Envoyer au backend
+        if (!validateForm()) {
+            return;
+        }
+
+        setIsSubmitting(true);
+        setErrors({});
+
+        try {
+            const formDataToSend = new FormData();
+            
+            formDataToSend.append('nom', formData.nom.trim());
+            formDataToSend.append('preference_prix', formData.choixPrix);
+            
+            if (formData.photo) {
+                formDataToSend.append('photo', formData.photo);
+            }
+            
+            const pronostics = {
+                sexe: formData.sexe,
+                prenom: formData.prenom.trim(),
+                poids: parseFloat(formData.poids),
+                taille: parseFloat(formData.taille),
+                couleur_cheveux: formData.couleurCheveux,
+                type_cheveux: formData.typeCheveux,
+                date_naissance: formData.date,
+                heure_naissance: formData.heure
+            };
+            
+            Object.keys(pronostics).forEach(key => {
+                formDataToSend.append(key, pronostics[key]);
+            });
+
+            const response = await fetch('http://localhost:3001/api/participants', {
+                method: 'POST',
+                body: formDataToSend
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                setSubmitSuccess(true);
+                
+                // Redirection vers la page participants après 3 secondes
+                setTimeout(() => {
+                    navigate('/participants');
+                }, 3000);
+                
+            } else {
+                throw new Error(result.error || 'Erreur lors de la création');
+            }
+
+        } catch (error) {
+            console.error('Erreur:', error);
+            setErrors({ 
+                submit: error.message || 'Erreur lors de l\'envoi. Vérifiez que le serveur backend est démarré.' 
+            });
+        } finally {
+            setIsSubmitting(false);
         }
     };
+
+    if (submitSuccess) {
+        return (
+            <div className="formulaire-container">
+                <div className="card text-center" style={{ padding: '40px', backgroundColor: '#e8f5e8' }}>
+                    <div style={{ fontSize: '60px', marginBottom: '20px' }}>🎉</div>
+                    <h2 style={{ color: '#2e7d32', marginBottom: '10px' }}>
+                        Pronostics enregistrés !
+                    </h2>
+                    <p style={{ fontSize: '18px', marginBottom: '20px' }}>
+                        Merci <strong>{formData.nom}</strong> ! Vos pronostics pour <strong>{formData.prenom}</strong> ont été enregistrés avec succès.
+                    </p>
+                    <p style={{ color: '#666' }}>
+                        Redirection vers les participants dans quelques secondes...
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="formulaire-container">
@@ -78,8 +153,15 @@ function PageFormulaire() {
                 📝 Vos pronostics
             </h2>
 
-            <form onSubmit={handleSubmit}>
+            {errors.submit && (
+                <div className="card" style={{ backgroundColor: '#fdeaea', border: '1px solid #f44336', marginBottom: '20px' }}>
+                    <p style={{ color: '#d32f2f', margin: '10px 0' }}>
+                        {errors.submit}
+                    </p>
+                </div>
+            )}
 
+            <form onSubmit={handleSubmit}>
                 <div className="card form-section form-section-info">
                     <h3 className="form-section-title">
                         👤 Vos informations
@@ -96,6 +178,7 @@ function PageFormulaire() {
                             onChange={handleChange}
                             placeholder="Entrez votre nom"
                             className={`form-input ${errors.nom ? 'form-input-error' : ''}`}
+                            disabled={isSubmitting}
                         />
                         {errors.nom && <p className="form-error">{errors.nom}</p>}
                     </div>
@@ -109,6 +192,7 @@ function PageFormulaire() {
                             accept="image/*"
                             onChange={handlePhotoChange}
                             className="file-upload"
+                            disabled={isSubmitting}
                         />
                         {formData.photo && (
                             <p className="file-success">
@@ -135,6 +219,7 @@ function PageFormulaire() {
                                     value="garcon"
                                     checked={formData.sexe === 'garcon'}
                                     onChange={handleChange}
+                                    disabled={isSubmitting}
                                 />
                                 👦 Garçon
                             </label>
@@ -145,6 +230,7 @@ function PageFormulaire() {
                                     value="fille"
                                     checked={formData.sexe === 'fille'}
                                     onChange={handleChange}
+                                    disabled={isSubmitting}
                                 />
                                 👧 Fille
                             </label>
@@ -163,6 +249,7 @@ function PageFormulaire() {
                             onChange={handleChange}
                             placeholder="Votre idée de prénom"
                             className={`form-input ${errors.prenom ? 'form-input-error' : ''}`}
+                            disabled={isSubmitting}
                         />
                         {errors.prenom && <p className="form-error">{errors.prenom}</p>}
                     </div>
@@ -177,11 +264,12 @@ function PageFormulaire() {
                                 name="poids"
                                 value={formData.poids}
                                 onChange={handleChange}
-                                placeholder="3.5"
+                                placeholder="3.25"
                                 min="1"
                                 max="6"
-                                step="0.1"
+                                step="0.01"
                                 className={`form-input ${errors.poids ? 'form-input-error' : ''}`}
+                                disabled={isSubmitting}
                             />
                             {errors.poids && <p className="form-error">{errors.poids}</p>}
                         </div>
@@ -194,10 +282,12 @@ function PageFormulaire() {
                                 name="taille"
                                 value={formData.taille}
                                 onChange={handleChange}
-                                placeholder="50"
+                                placeholder="50.5"
                                 min="35"
                                 max="65"
+                                step="0.1"
                                 className={`form-input ${errors.taille ? 'form-input-error' : ''}`}
+                                disabled={isSubmitting}
                             />
                             {errors.taille && <p className="form-error">{errors.taille}</p>}
                         </div>
@@ -213,6 +303,7 @@ function PageFormulaire() {
                                 value={formData.couleurCheveux}
                                 onChange={handleChange}
                                 className={`form-select ${errors.couleurCheveux ? 'form-input-error' : ''}`}
+                                disabled={isSubmitting}
                             >
                                 <option value="">Choisir...</option>
                                 <option value="brun">Brun</option>
@@ -232,6 +323,7 @@ function PageFormulaire() {
                                 value={formData.typeCheveux}
                                 onChange={handleChange}
                                 className={`form-select ${errors.typeCheveux ? 'form-input-error' : ''}`}
+                                disabled={isSubmitting}
                             >
                                 <option value="">Choisir...</option>
                                 <option value="lisse">Lisse</option>
@@ -254,6 +346,7 @@ function PageFormulaire() {
                                 value={formData.date}
                                 onChange={handleChange}
                                 className={`form-input ${errors.date ? 'form-input-error' : ''}`}
+                                disabled={isSubmitting}
                             />
                             {errors.date && <p className="form-error">{errors.date}</p>}
                         </div>
@@ -267,6 +360,7 @@ function PageFormulaire() {
                                 value={formData.heure}
                                 onChange={handleChange}
                                 className={`form-input ${errors.heure ? 'form-input-error' : ''}`}
+                                disabled={isSubmitting}
                             />
                             {errors.heure && <p className="form-error">{errors.heure}</p>}
                         </div>
@@ -290,6 +384,7 @@ function PageFormulaire() {
                                     value="jambon"
                                     checked={formData.choixPrix === 'jambon'}
                                     onChange={handleChange}
+                                    disabled={isSubmitting}
                                 />
                                 <span className="prix-emoji">🥓</span>
                                 <span className="prix-text">Jambon du poids de Pipas</span>
@@ -301,6 +396,7 @@ function PageFormulaire() {
                                     value="fromage"
                                     checked={formData.choixPrix === 'fromage'}
                                     onChange={handleChange}
+                                    disabled={isSubmitting}
                                 />
                                 <span className="prix-emoji">🧀</span>
                                 <span className="prix-text">Fromage du poids de Pipas</span>
@@ -314,8 +410,13 @@ function PageFormulaire() {
                     <button
                         type="submit"
                         className="btn-accueil-primary"
+                        disabled={isSubmitting}
+                        style={{ 
+                            opacity: isSubmitting ? 0.6 : 1,
+                            cursor: isSubmitting ? 'not-allowed' : 'pointer'
+                        }}
                     >
-                        🎯 Valider mes pronostics
+                        {isSubmitting ? 'Envoi en cours...' : '🎯 Valider mes pronostics'}
                     </button>
                 </div>
             </form>
